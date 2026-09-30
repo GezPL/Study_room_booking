@@ -1,20 +1,24 @@
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import RootNavigator from './src/navigation/RootNavigator';
+import { registerForPushNotificationsAsync } from './src/utils/notifications';
 
 export default function App() {
+  useEffect(() => {
+    // Request notification permissions and create Android channels
+    registerForPushNotificationsAsync().catch((err) => {
+      console.warn('Failed to initialize push notifications:', err);
+    });
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <RootNavigator />
+        <StatusBar style="dark" />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

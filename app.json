@@ -1,11 +1,21 @@
 {
   "expo": {
-    "name": "mini_project2",
-    "slug": "mini_project2",
+    "name": "VKU Study Room Booking",
+    "slug": "vku-study-room-booking",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2563EB"
+        }
+      ],
+      "expo-font"
+    ],
     "ios": {
       "supportsTablet": true
     },
