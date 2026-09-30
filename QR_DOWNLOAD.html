@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VKU Study Spaces - Cài đặt ứng dụng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-dark: #1D4ED8;
+      --accent: #10B981;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 50%, #EEF2F6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text-main);
+    }
+    .container {
+      background: var(--card-bg);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+      max-width: 440px;
+      width: 100%;
+      padding: 36px 28px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #EFF6FF;
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin: 0 auto 16px;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.35);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .qr-card {
+      background: #F8FAFC;
+      border: 2px dashed #CBD5E1;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .qr-img {
+      width: 220px;
+      height: 220px;
+      border-radius: 12px;
+      background: white;
+      padding: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .qr-instruction {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+      box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4);
+      margin-bottom: 12px;
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #F1F5F9;
+      color: #334155;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: #E2E8F0;
+    }
+    .student-info {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .student-name {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      Đã kiểm thử sẵn sàng
+    </div>
+
+    <div class="app-icon">🏫</div>
+
+    <h1>VKU Study Spaces</h1>
+    <p class="subtitle">Ứng dụng Đặt phòng học thông minh theo thời gian thực dành cho sinh viên VKU</p>
+
+    <div class="qr-card">
+      <img
+        class="qr-img"
+        src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fexpo.dev%2Fartifacts%2Feas%2FMkBHe5Mz8QFNvhjWIFt82NGm0VXO-zmUbpfzA5fGJAQ.apk"
+        alt="QR Code Cài đặt ứng dụng"
+      />
+      <p class="qr-instruction">📷 Mở camera điện thoại quét để tải file APK</p>
+    </div>
+
+    <a
+      href="https://expo.dev/artifacts/eas/MkBHe5Mz8QFNvhjWIFt82NGm0VXO-zmUbpfzA5fGJAQ.apk"
+      class="btn btn-primary"
+    >
+      <span>📥</span> Tải trực tiếp APK (Android)
+    </a>
+
+    <a
+      href="https://expo.dev/accounts/longp/projects/vku-study-room-booking/builds/84381245-527d-41c1-8160-ef644470b2ef"
+      target="_blank"
+      class="btn btn-secondary"
+    >
+      <span>🌐</span> Mở trang thông tin Expo Cloud
+    </a>
+
+    <div class="student-info">
+      Tác giả: <span class="student-name">Phạm Ngọc Long</span><br>
+      Mã sinh viên: <span class="student-name">23IT.B122</span> • VKU
+    </div>
+  </div>
+</body>
+</html>
+
