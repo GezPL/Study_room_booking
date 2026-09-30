@@ -16,6 +16,7 @@ import { RootStackParamList, Room } from '../types';
 import { MOCK_ROOMS } from '../utils/mockData';
 import { useBookingStore } from '../store/useBookingStore';
 import { RoomCard, FilterSection } from '../components';
+import { getRoomCurrentStatus } from '../utils/dateHelpers';
 import { Ionicons } from '@expo/vector-icons';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -25,7 +26,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { userSession, activeFilters, setFilters, resetFilters } =
+  const { userSession, activeFilters, setFilters, resetFilters, activeBookings } =
     useBookingStore();
 
   const handleSelectRoom = useCallback(
@@ -82,10 +83,21 @@ export default function HomeScreen() {
   }, [activeFilters]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Room }) => (
-      <RoomCard room={item} onPress={handleSelectRoom} />
-    ),
-    [handleSelectRoom]
+    ({ item }: { item: Room }) => {
+      const currentStatus = getRoomCurrentStatus(
+        item.id,
+        activeBookings,
+        item.status
+      );
+      return (
+        <RoomCard
+          room={item}
+          onPress={handleSelectRoom}
+          currentStatus={currentStatus}
+        />
+      );
+    },
+    [handleSelectRoom, activeBookings]
   );
 
   const keyExtractor = useCallback((item: Room) => item.id, []);
@@ -155,11 +167,22 @@ export default function HomeScreen() {
                 Showing <Text style={styles.resultHighlight}>{filteredRooms.length}</Text> of{' '}
                 {MOCK_ROOMS.length} rooms
               </Text>
-              {filteredRooms.some((r) => r.status === 'Available Now') && (
+              {filteredRooms.some(
+                (r) =>
+                  getRoomCurrentStatus(r.id, activeBookings, r.status) ===
+                  'Available Now'
+              ) && (
                 <View style={styles.liveAvailableBadge}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveAvailableText}>
-                    {filteredRooms.filter((r) => r.status === 'Available Now').length} Available Now
+                    {
+                      filteredRooms.filter(
+                        (r) =>
+                          getRoomCurrentStatus(r.id, activeBookings, r.status) ===
+                          'Available Now'
+                      ).length
+                    }{' '}
+                    Available Now
                   </Text>
                 </View>
               )}

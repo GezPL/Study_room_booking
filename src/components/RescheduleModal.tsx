@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Booking } from '../types';
 import { TIME_SLOTS } from '../utils/mockData';
-import { getNext7Days, DaySlot } from '../utils/dateHelpers';
+import { getNext7Days, DaySlot, isTimeSlotInPast } from '../utils/dateHelpers';
 import { useBookingStore } from '../store/useBookingStore';
 import {
   scheduleBookingReminder,
@@ -60,11 +60,13 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
     const booked = isSlotBooked(booking.room.id, effectiveDate, slot, booking.id);
     const isThisCurrentSlot =
       effectiveDate === booking.date && slot === booking.timeSlot;
+    const isPast = isTimeSlotInPast(effectiveDate, slot);
 
     return {
       slot,
       isBooked: booked,
       isCurrent: isThisCurrentSlot,
+      isPast,
     };
   });
 
@@ -72,7 +74,14 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
     setSelectedDate(dateStr);
   };
 
-  const handleSlotSelect = (slot: string, isBooked: boolean) => {
+  const handleSlotSelect = (slot: string, isBooked: boolean, isPast: boolean) => {
+    if (isPast) {
+      Alert.alert(
+        'Time Slot Passed',
+        `This time slot (${slot}) has already ended or started for today. Please select an upcoming slot.`
+      );
+      return;
+    }
     if (isBooked) {
       Alert.alert(
         'Slot Unavailable',
@@ -253,19 +262,20 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
               {/* 2. Time Slot Grid */}
               <Text style={styles.sectionTitle}>2. Choose 2-Hour Time Slot</Text>
               <View style={styles.slotsGrid}>
-                {slotAvailability.map(({ slot, isBooked, isCurrent }) => {
+                {slotAvailability.map(({ slot, isBooked, isCurrent, isPast }) => {
                   const isSelected = effectiveSlot === slot;
+                  const isDisabled = (isBooked || isPast) && !isCurrent;
 
                   return (
                     <TouchableOpacity
                       key={slot}
                       style={[
                         styles.slotItem,
-                        isBooked && styles.slotItemDisabled,
+                        isDisabled && styles.slotItemDisabled,
                         isSelected && styles.slotItemActive,
                       ]}
-                      onPress={() => handleSlotSelect(slot, isBooked)}
-                      disabled={isBooked}
+                      onPress={() => handleSlotSelect(slot, isBooked, isPast)}
+                      disabled={isDisabled}
                       activeOpacity={0.8}
                     >
                       <View style={styles.slotTop}>
@@ -275,7 +285,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                           color={
                             isSelected
                               ? '#FFFFFF'
-                              : isBooked
+                              : isDisabled
                               ? '#94A3B8'
                               : '#2563EB'
                           }
@@ -283,31 +293,37 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                         <View
                           style={[
                             styles.badge,
-                            isBooked
+                            isCurrent
+                              ? styles.badgeCurrent
+                              : isPast
+                              ? styles.badgeExpired
+                              : isBooked
                               ? styles.badgeBooked
                               : isSelected
                               ? styles.badgeSelected
-                              : isCurrent
-                              ? styles.badgeCurrent
                               : styles.badgeAvailable,
                           ]}
                         >
                           <Text
                             style={[
                               styles.badgeText,
-                              isBooked
+                              isCurrent
+                                ? styles.badgeTextCurrent
+                                : isPast
+                                ? styles.badgeTextExpired
+                                : isBooked
                                 ? styles.badgeTextBooked
                                 : isSelected
                                 ? styles.badgeTextWhite
-                                : isCurrent
-                                ? styles.badgeTextCurrent
                                 : styles.badgeTextAvailable,
                             ]}
                           >
-                            {isBooked
-                              ? 'Booked'
-                              : isCurrent
+                            {isCurrent
                               ? 'Current'
+                              : isPast
+                              ? 'Expired'
+                              : isBooked
+                              ? 'Booked'
                               : isSelected
                               ? 'Selected'
                               : 'Available'}
@@ -317,7 +333,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                       <Text
                         style={[
                           styles.slotTime,
-                          isBooked && styles.slotTimeDisabled,
+                          isDisabled && styles.slotTimeDisabled,
                           isSelected && styles.textWhite,
                         ]}
                       >
@@ -554,6 +570,9 @@ const styles = StyleSheet.create({
   badgeBooked: {
     backgroundColor: '#FEE2E2',
   },
+  badgeExpired: {
+    backgroundColor: '#F1F5F9',
+  },
   badgeSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
@@ -569,6 +588,9 @@ const styles = StyleSheet.create({
   },
   badgeTextBooked: {
     color: '#DC2626',
+  },
+  badgeTextExpired: {
+    color: '#64748B',
   },
   badgeTextWhite: {
     color: '#FFFFFF',

@@ -12,18 +12,21 @@ import {
 } from 'react-native';
 import { useBookingStore } from '../store/useBookingStore';
 import { cancelBookingReminder } from '../utils/notifications';
+import { isBookingPast } from '../utils/dateHelpers';
 import { Ionicons } from '@expo/vector-icons';
-import { Booking, MainTabParamList } from '../types';
+import { Booking, RootStackParamList } from '../types';
 import { useNavigation } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BookingPassModal, RescheduleModal } from '../components';
 
-type MyBookingsNavProp = BottomTabNavigationProp<MainTabParamList, 'MyBookings'>;
+type MyBookingsNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MyBookingsScreen() {
   const navigation = useNavigation<MyBookingsNavProp>();
   const { activeBookings, cancelBooking, userSession, clearAllBookings } =
     useBookingStore();
+
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
   const [viewingPassBooking, setViewingPassBooking] = useState<Booking | null>(
     null
@@ -35,6 +38,18 @@ export default function MyBookingsScreen() {
     setReschedulingBooking,
   ] = useState<Booking | null>(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+
+  // Split bookings into upcoming vs past history
+  const upcomingBookings = activeBookings.filter(
+    (b) => !isBookingPast(b.date, b.timeSlot)
+  );
+
+  const historyBookings = activeBookings.filter((b) =>
+    isBookingPast(b.date, b.timeSlot)
+  );
+
+  const displayBookings =
+    activeTab === 'upcoming' ? upcomingBookings : historyBookings;
 
   const handleOpenPass = (booking: Booking) => {
     setViewingPassBooking(booking);
@@ -49,6 +64,10 @@ export default function MyBookingsScreen() {
 
   const handleRescheduleSuccess = (updatedBooking: Booking) => {
     setViewingPassBooking(updatedBooking);
+  };
+
+  const handleBookAgain = (booking: Booking) => {
+    navigation.navigate('RoomDetail', { room: booking.room });
   };
 
   const handleCancel = (booking: Booking) => {
@@ -114,113 +133,227 @@ export default function MyBookingsScreen() {
         )}
       </View>
 
-      {activeBookings.length === 0 ? (
+      {/* Segmented Control Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'upcoming' && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab('upcoming')}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="calendar"
+            size={15}
+            color={activeTab === 'upcoming' ? '#2563EB' : '#64748B'}
+          />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'upcoming' && styles.tabButtonTextActive,
+            ]}
+          >
+            Upcoming ({upcomingBookings.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'history' && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab('history')}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="time"
+            size={15}
+            color={activeTab === 'history' ? '#2563EB' : '#64748B'}
+          />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'history' && styles.tabButtonTextActive,
+            ]}
+          >
+            History ({historyBookings.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {displayBookings.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="calendar-outline" size={48} color="#94A3B8" />
+            <Ionicons
+              name={
+                activeTab === 'upcoming'
+                  ? 'calendar-outline'
+                  : 'file-tray-outline'
+              }
+              size={48}
+              color="#94A3B8"
+            />
           </View>
-          <Text style={styles.emptyTitle}>No active reservations</Text>
-          <Text style={styles.emptySubtitle}>
-            You have not reserved any study rooms yet. Browse available spaces across VKU blocks and book your spot!
+          <Text style={styles.emptyTitle}>
+            {activeTab === 'upcoming'
+              ? 'No upcoming reservations'
+              : 'No booking history yet'}
           </Text>
-          <TouchableOpacity
-            style={styles.browseRoomsBtn}
-            onPress={() => navigation.navigate('Home')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="search" size={16} color="#FFFFFF" />
-            <Text style={styles.browseRoomsBtnText}>Browse Available Rooms</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptySubtitle}>
+            {activeTab === 'upcoming'
+              ? 'You have no scheduled sessions coming up. Browse available spaces across VKU blocks and book your spot!'
+              : 'Completed study room sessions will automatically be recorded here after your reservation time ends.'}
+          </Text>
+          {activeTab === 'upcoming' && (
+            <TouchableOpacity
+              style={styles.browseRoomsBtn}
+              onPress={() => navigation.navigate('MainTabs')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="search" size={16} color="#FFFFFF" />
+              <Text style={styles.browseRoomsBtnText}>
+                Browse Available Rooms
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <FlatList
-          data={activeBookings}
+          data={displayBookings}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              activeOpacity={0.92}
-              onPress={() => handleOpenPass(item)}
-            >
-              {/* Card Header & Room Info */}
-              <View style={styles.cardTopRow}>
-                <Image
-                  source={{ uri: item.room.image_url }}
-                  style={styles.thumbnail}
-                />
-                <View style={styles.roomInfo}>
-                  <View style={styles.badgeRow}>
-                    <View style={styles.confirmedPill}>
-                      <View style={styles.greenDot} />
-                      <Text style={styles.confirmedText}>Confirmed</Text>
+          renderItem={({ item }) => {
+            const isCompleted = isBookingPast(item.date, item.timeSlot);
+
+            return (
+              <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.92}
+                onPress={() => handleOpenPass(item)}
+              >
+                {/* Card Header & Room Info */}
+                <View style={styles.cardTopRow}>
+                  <Image
+                    source={{ uri: item.room.image_url }}
+                    style={styles.thumbnail}
+                  />
+                  <View style={styles.roomInfo}>
+                    <View style={styles.badgeRow}>
+                      {isCompleted ? (
+                        <View style={styles.completedPill}>
+                          <View style={styles.grayDot} />
+                          <Text style={styles.completedText}>Completed</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.confirmedPill}>
+                          <View style={styles.greenDot} />
+                          <Text style={styles.confirmedText}>Confirmed</Text>
+                        </View>
+                      )}
+                      <View style={styles.qrBadge}>
+                        <Ionicons name="qr-code" size={11} color="#2563EB" />
+                        <Text style={styles.qrBadgeText}>
+                          Pass #{item.id.slice(-5).toUpperCase()}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.qrBadge}>
-                      <Ionicons name="qr-code" size={11} color="#2563EB" />
-                      <Text style={styles.qrBadgeText}>Pass #{item.id.slice(-5).toUpperCase()}</Text>
-                    </View>
+
+                    <Text style={styles.roomName}>{item.room.name}</Text>
+                    <Text style={styles.roomLocation}>
+                      Building {item.room.building} • Floor {item.room.floor}
+                    </Text>
                   </View>
-
-                  <Text style={styles.roomName}>{item.room.name}</Text>
-                  <Text style={styles.roomLocation}>
-                    Building {item.room.building} • Floor {item.room.floor}
-                  </Text>
                 </View>
-              </View>
 
-              {/* Time Schedule Banner */}
-              <View style={styles.scheduleBox}>
-                <View style={styles.scheduleItem}>
-                  <Ionicons name="calendar" size={15} color="#2563EB" />
-                  <Text style={styles.scheduleText}>{item.date}</Text>
+                {/* Time Schedule Banner */}
+                <View style={styles.scheduleBox}>
+                  <View style={styles.scheduleItem}>
+                    <Ionicons name="calendar" size={15} color="#2563EB" />
+                    <Text style={styles.scheduleText}>{item.date}</Text>
+                  </View>
+                  <View style={styles.scheduleDivider} />
+                  <View style={styles.scheduleItem}>
+                    <Ionicons name="time" size={15} color="#2563EB" />
+                    <Text style={styles.scheduleTextBold}>{item.timeSlot}</Text>
+                  </View>
                 </View>
-                <View style={styles.scheduleDivider} />
-                <View style={styles.scheduleItem}>
-                  <Ionicons name="time" size={15} color="#2563EB" />
-                  <Text style={styles.scheduleTextBold}>{item.timeSlot}</Text>
+
+                {/* Notification indicator for active bookings */}
+                {!isCompleted && item.notificationId && (
+                  <View style={styles.reminderRow}>
+                    <Ionicons
+                      name="notifications-outline"
+                      size={13}
+                      color="#059669"
+                    />
+                    <Text style={styles.reminderText}>
+                      Reminder alert set 15m prior
+                    </Text>
+                  </View>
+                )}
+
+                {/* Action Buttons Row */}
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    style={styles.viewPassBtn}
+                    onPress={() => handleOpenPass(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="qr-code-outline"
+                      size={15}
+                      color="#2563EB"
+                    />
+                    <Text style={styles.viewPassText}>View QR Pass</Text>
+                  </TouchableOpacity>
+
+                  {isCompleted ? (
+                    <TouchableOpacity
+                      style={styles.bookAgainBtn}
+                      onPress={() => handleBookAgain(item)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name="repeat-outline"
+                        size={15}
+                        color="#059669"
+                      />
+                      <Text style={styles.bookAgainText}>Book Again</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={styles.rescheduleBtn}
+                        onPress={() => handleOpenReschedule(item)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={15}
+                          color="#4F46E5"
+                        />
+                        <Text style={styles.rescheduleText}>Change Time</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => handleCancel(item)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={15}
+                          color="#EF4444"
+                        />
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
-              </View>
-
-              {item.notificationId && (
-                <View style={styles.reminderRow}>
-                  <Ionicons name="notifications-outline" size={13} color="#059669" />
-                  <Text style={styles.reminderText}>
-                    Reminder alert set 15m prior
-                  </Text>
-                </View>
-              )}
-
-              {/* Action Buttons Row */}
-              <View style={styles.actionsContainer}>
-                <TouchableOpacity
-                  style={styles.viewPassBtn}
-                  onPress={() => handleOpenPass(item)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="qr-code-outline" size={15} color="#2563EB" />
-                  <Text style={styles.viewPassText}>View QR Pass</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.rescheduleBtn}
-                  onPress={() => handleOpenReschedule(item)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="calendar-outline" size={15} color="#4F46E5" />
-                  <Text style={styles.rescheduleText}>Change Time</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={() => handleCancel(item)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
 
@@ -230,7 +363,12 @@ export default function MyBookingsScreen() {
         booking={viewingPassBooking}
         mode="view"
         onClose={() => setShowPassModal(false)}
-        onEditTime={handleOpenReschedule}
+        onEditTime={
+          viewingPassBooking &&
+          !isBookingPast(viewingPassBooking.date, viewingPassBooking.timeSlot)
+            ? handleOpenReschedule
+            : undefined
+        }
       />
 
       {/* Reschedule Modal */}
@@ -284,6 +422,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#EF4444',
     fontWeight: '600',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    gap: 8,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+  },
+  tabButtonActive: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabButtonTextActive: {
+    color: '#2563EB',
+    fontWeight: '700',
   },
   listContent: {
     padding: 16,
@@ -390,6 +561,26 @@ const styles = StyleSheet.create({
   },
   confirmedText: {
     color: '#059669',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  completedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  grayDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#94A3B8',
+  },
+  completedText: {
+    color: '#64748B',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -500,6 +691,23 @@ const styles = StyleSheet.create({
   },
   rescheduleText: {
     color: '#4F46E5',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bookAgainBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  bookAgainText: {
+    color: '#059669',
     fontSize: 12,
     fontWeight: '700',
   },

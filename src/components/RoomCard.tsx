@@ -7,16 +7,18 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { Room } from '../types';
+import { Room, RoomStatus } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 
 interface RoomCardProps {
   room: Room;
   onPress: (room: Room) => void;
+  currentStatus?: RoomStatus;
 }
 
-const RoomCard: React.FC<RoomCardProps> = ({ room, onPress }) => {
-  const isAvailable = room.status === 'Available Now';
+const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, currentStatus }) => {
+  const displayStatus = currentStatus ?? room.status;
+  const isAvailable = displayStatus === 'Available Now';
 
   const getEquipmentIcon = (name: string): keyof typeof Ionicons.glyphMap => {
     switch (name) {
@@ -64,7 +66,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onPress }) => {
               { color: isAvailable ? '#065F46' : '#991B1B' },
             ]}
           >
-            {room.status}
+            {displayStatus}
           </Text>
         </View>
 

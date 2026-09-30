@@ -15,7 +15,12 @@ import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Booking } from '../types';
 import { TIME_SLOTS } from '../utils/mockData';
-import { getNext7Days, DaySlot } from '../utils/dateHelpers';
+import {
+  getNext7Days,
+  DaySlot,
+  isTimeSlotInPast,
+  isBookingPast,
+} from '../utils/dateHelpers';
 import { useBookingStore } from '../store/useBookingStore';
 import { scheduleBookingReminder } from '../utils/notifications';
 import { BookingPassModal } from '../components';
@@ -29,7 +34,7 @@ export default function RoomDetailScreen() {
   const navigation = useNavigation<RoomDetailNavProp>();
   const { room } = route.params;
 
-  const { isSlotBooked, addBooking } = useBookingStore();
+  const { isSlotBooked, addBooking, activeBookings } = useBookingStore();
 
   const daysList: DaySlot[] = useMemo(() => getNext7Days(), []);
   const [selectedDate, setSelectedDate] = useState<string>(daysList[0].dateString);
@@ -38,13 +43,15 @@ export default function RoomDetailScreen() {
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [showPassModal, setShowPassModal] = useState(false);
 
-  // Check conflicts for all slots for the selected room and date
+  // Check conflicts and past time for all slots for the selected room and date
   const slotAvailability = useMemo(() => {
     return TIME_SLOTS.map((slot) => {
       const booked = isSlotBooked(room.id, selectedDate, slot);
+      const past = isTimeSlotInPast(selectedDate, slot);
       return {
         slot,
         isBooked: booked,
+        isPast: past,
       };
     });
   }, [room.id, selectedDate, isSlotBooked]);
@@ -54,7 +61,14 @@ export default function RoomDetailScreen() {
     setSelectedSlot(null); // Reset selected slot when changing date
   };
 
-  const handleSlotSelect = (slot: string, isBooked: boolean) => {
+  const handleSlotSelect = (slot: string, isBooked: boolean, isPast: boolean) => {
+    if (isPast) {
+      Alert.alert(
+        'Time Slot Passed',
+        `The time slot (${slot}) has already ended or started for today. Please select an upcoming slot or choose another date.`
+      );
+      return;
+    }
     if (isBooked) {
       Alert.alert(
         'Slot Unavailable',
@@ -68,6 +82,19 @@ export default function RoomDetailScreen() {
   const handleConfirmBooking = async () => {
     if (!selectedSlot) {
       Alert.alert('Selection Required', 'Please choose an available time slot.');
+      return;
+    }
+
+    // Quota check: maximum 3 active upcoming reservations per student
+    const activeUpcomingCount = activeBookings.filter(
+      (b) => !isBookingPast(b.date, b.timeSlot)
+    ).length;
+
+    if (activeUpcomingCount >= 3) {
+      Alert.alert(
+        'Reservation Limit Reached (Max 3)',
+        'VKU study room policy allows each student to hold up to 3 active bookings at the same time. Please complete or cancel an existing booking before reserving another slot.'
+      );
       return;
     }
 
@@ -250,19 +277,20 @@ export default function RoomDetailScreen() {
           </Text>
 
           <View style={styles.timeSlotGrid}>
-            {slotAvailability.map(({ slot, isBooked }) => {
+            {slotAvailability.map(({ slot, isBooked, isPast }) => {
               const isSelected = selectedSlot === slot;
+              const isDisabled = isBooked || isPast;
 
               return (
                 <TouchableOpacity
                   key={slot}
                   style={[
                     styles.slotCard,
-                    isBooked && styles.slotCardDisabled,
+                    isDisabled && styles.slotCardDisabled,
                     isSelected && styles.slotCardSelected,
                   ]}
-                  onPress={() => handleSlotSelect(slot, isBooked)}
-                  disabled={isBooked}
+                  onPress={() => handleSlotSelect(slot, isBooked, isPast)}
+                  disabled={isDisabled}
                   activeOpacity={0.8}
                 >
                   <View style={styles.slotHeader}>
@@ -272,7 +300,7 @@ export default function RoomDetailScreen() {
                       color={
                         isSelected
                           ? '#FFFFFF'
-                          : isBooked
+                          : isDisabled
                           ? '#94A3B8'
                           : '#2563EB'
                       }
@@ -282,6 +310,8 @@ export default function RoomDetailScreen() {
                         styles.slotBadge,
                         isSelected
                           ? styles.slotBadgeSelected
+                          : isPast
+                          ? styles.slotBadgeExpired
                           : isBooked
                           ? styles.slotBadgeDisabled
                           : styles.slotBadgeAvailable,
@@ -292,12 +322,14 @@ export default function RoomDetailScreen() {
                           styles.slotBadgeText,
                           isSelected
                             ? styles.slotBadgeTextSelected
+                            : isPast
+                            ? styles.slotBadgeTextExpired
                             : isBooked
                             ? styles.slotBadgeTextDisabled
                             : styles.slotBadgeTextAvailable,
                         ]}
                       >
-                        {isBooked ? 'Booked' : isSelected ? 'Selected' : 'Available'}
+                        {isPast ? 'Expired' : isBooked ? 'Booked' : isSelected ? 'Selected' : 'Available'}
                       </Text>
                     </View>
                   </View>
@@ -305,7 +337,7 @@ export default function RoomDetailScreen() {
                   <Text
                     style={[
                       styles.slotTimeText,
-                      isBooked && styles.slotTimeTextDisabled,
+                      isDisabled && styles.slotTimeTextDisabled,
                       isSelected && styles.slotTimeTextSelected,
                     ]}
                   >
@@ -606,6 +638,9 @@ const styles = StyleSheet.create({
   slotBadgeDisabled: {
     backgroundColor: '#FEE2E2',
   },
+  slotBadgeExpired: {
+    backgroundColor: '#F1F5F9',
+  },
   slotBadgeSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
@@ -618,6 +653,9 @@ const styles = StyleSheet.create({
   },
   slotBadgeTextDisabled: {
     color: '#DC2626',
+  },
+  slotBadgeTextExpired: {
+    color: '#64748B',
   },
   slotBadgeTextSelected: {
     color: '#FFFFFF',

@@ -40,18 +40,36 @@
 ### 3. 🛡️ Cơ chế chống trùng lịch thông minh (Real-time Conflict Engine)
 - Tự động đối soát trạng thái với `useBookingStore`. Nếu một khung giờ của phòng trong ngày đã có người đặt, hệ thống sẽ **lập tức vô hiệu hóa (disabled)** nút bấm đó, đổi màu xám, gạch ngang thời gian và hiển thị nhãn **"Booked"**, ngăn ngừa tình trạng đặt đè slot.
 
-### 4. 🎫 Vé vào phòng điện tử & Mã QR tương tác (Booking Pass Modal)
-- Sau khi xác nhận đặt phòng thành công, ứng dụng sinh ra thẻ vào phòng **Booking Pass** chứa:
+### 4. 🎫 Vé vào phòng điện tử & Xem lại mã QR (Booking Pass Modal)
+- Sau khi xác nhận đặt phòng thành công hoặc xem lại từ danh sách **My Bookings**, ứng dụng hiển thị thẻ vào phòng **Booking Pass**:
   - Mã QR Code tương tác độc bản tạo bằng thuật toán ma trận hình học (`InteractiveQRCode`), cho phép chạm để mô phỏng quét check-in khi vào phòng.
-  - Mã đặt phòng dạng mã số định danh (`#PASS-XXXXX`).
-  - Thông tin sinh viên, tên phòng, tầng và khung giờ đã chọn.
+  - Tích hợp nút xem trực tiếp mã QR và nút **"Đổi lịch" (Change Time)** ngay trong modal vé hoặc card danh sách.
+  - Mã đặt phòng dạng mã số định danh (`#PASS-XXXXX`), thông tin sinh viên, tên phòng, tầng và khung giờ.
 
-### 5. ⏰ Thông báo cục bộ nhắc hẹn tự động (Local Notifications)
+### 5. 🔄 Đổi ngày & giờ linh hoạt (Reschedule Modal)
+- Cho phép sinh viên thay đổi thời gian đặt phòng đã chọn mà không cần phải hủy đi đặt lại từ đầu:
+  - Chọn ngày mới trong 7 ngày kế tiếp.
+  - Chọn khung giờ mới với tính năng tự loại trừ booking hiện tại khi kiểm tra trùng lịch (`excludeBookingId`).
+  - Tự động hủy thông báo cũ và lên lịch lại thông báo 15 phút trước cho khung giờ mới.
+
+### 6. 📂 Quản lý danh sách đặt chỗ phân tách (Upcoming & History Tabs)
+- Màn hình **My Bookings** được chia thành 2 phân đoạn:
+  - **Sắp tới (Upcoming)**: Hiển thị các phòng sắp diễn ra, cho phép xem mã QR, đổi lịch hoặc hủy phòng.
+  - **Lịch sử (History)**: Tự động gom các lịch đặt đã kết thúc giờ học, hỗ trợ tính năng **"Đặt lại" (Book Again)** để chuyển thẳng sang màn hình đặt phòng tương ứng.
+
+### 7. ⚖️ Hạn mức đặt phòng công bằng (Fair Usage Quota)
+- Giới hạn mỗi sinh viên được giữ tối đa **3 phòng sắp tới (Upcoming)** cùng một lúc nhằm chống việc đặt giữ chỗ tràn lan không sử dụng.
+
+### 8. ⏰ Khóa slot quá hạn & Trạng thái phòng động theo thời gian thực
+- **Past Slot Validation**: Tự động khóa (`Expired`, màu xám) các khung giờ đã bắt đầu hoặc kết thúc trong ngày hiện tại, tránh đặt slot trong quá khứ.
+- **Dynamic Real-time Status**: Tính toán trạng thái phòng (`Available Now` vs `Occupied`) ngay tại thời điểm thực tế dựa trên danh sách lịch đặt đang có trong khung giờ hiện hành.
+
+### 9. 🔔 Thông báo cục bộ nhắc hẹn tự động (Local Notifications)
 - Tích hợp `expo-notifications` lên lịch thông báo cục bộ chính xác **15 phút trước giờ bắt đầu**.
-- Tự động hủy thông báo khi sinh viên chủ động hủy đặt phòng.
+- Tự động hủy thông báo khi sinh viên chủ động hủy đặt phòng hoặc đổi sang khung giờ mới.
 - Đã được vá tương thích tối đa với Expo Go trên hệ điều hành Android (Expo SDK 53+).
 
-### 6. 💾 Lưu trữ dữ liệu bền vững (Offline Persistence)
+### 10. 💾 Lưu trữ dữ liệu bền vững (Offline Persistence)
 - Tích hợp Zustand với `@react-native-async-storage/async-storage` qua `persist` middleware.
 - Toàn bộ lịch đặt phòng và phiên đăng nhập của sinh viên được lưu trữ trên thiết bị, không bị mất đi khi tắt app hoặc khởi động lại thiết bị.
 
@@ -71,7 +89,8 @@ mini_project2/
 │   │   ├── RoomCard.tsx          # Card hiển thị phòng học (memoized tối ưu 60fps)
 │   │   ├── FilterSection.tsx     # Cụm chip lọc theo Tòa, Sức chứa, Thiết bị
 │   │   ├── InteractiveQRCode.tsx # Mã QR tương tác mô phỏng check-in
-│   │   ├── BookingPassModal.tsx  # Modal vé vào phòng học sau khi đặt
+│   │   ├── BookingPassModal.tsx  # Modal vé vào phòng học sau khi đặt / xem lại
+│   │   ├── RescheduleModal.tsx   # Modal đổi ngày và giờ đặt phòng linh hoạt
 │   │   └── index.ts              # Barrel export
 │   │
 │   ├── navigation/               # Điều hướng ứng dụng (React Navigation)
@@ -79,9 +98,9 @@ mini_project2/
 │   │   └── TabNavigator.tsx      # Bottom Tabs: [Home, MyBookings] kèm dynamic badge
 │   │
 │   ├── screens/                  # Các màn hình chính
-│   │   ├── HomeScreen.tsx        # Danh sách phòng, tìm kiếm và bộ lọc
+│   │   ├── HomeScreen.tsx        # Danh sách phòng, tìm kiếm và bộ lọc thời gian thực
 │   │   ├── RoomDetailScreen.tsx  # Chi tiết phòng, chọn ngày & lưới slot chống trùng
-│   │   └── MyBookingsScreen.tsx  # Quản lý danh sách đặt chỗ cá nhân & hủy lịch
+│   │   └── MyBookingsScreen.tsx  # Quản lý Tabs Upcoming/History, xem vé QR & đổi giờ
 │   │
 │   ├── store/                    # Quản lý trạng thái toàn cục (Zustand)
 │   │   └── useBookingStore.ts    # Store trung tâm kết hợp AsyncStorage persistence
