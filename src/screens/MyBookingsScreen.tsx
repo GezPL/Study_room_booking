@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Booking, MainTabParamList } from '../types';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { BookingPassModal, RescheduleModal } from '../components';
 
 type MyBookingsNavProp = BottomTabNavigationProp<MainTabParamList, 'MyBookings'>;
 
@@ -23,6 +24,32 @@ export default function MyBookingsScreen() {
   const navigation = useNavigation<MyBookingsNavProp>();
   const { activeBookings, cancelBooking, userSession, clearAllBookings } =
     useBookingStore();
+
+  const [viewingPassBooking, setViewingPassBooking] = useState<Booking | null>(
+    null
+  );
+  const [showPassModal, setShowPassModal] = useState(false);
+
+  const [
+    reschedulingBooking,
+    setReschedulingBooking,
+  ] = useState<Booking | null>(null);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+
+  const handleOpenPass = (booking: Booking) => {
+    setViewingPassBooking(booking);
+    setShowPassModal(true);
+  };
+
+  const handleOpenReschedule = (booking: Booking) => {
+    setShowPassModal(false);
+    setReschedulingBooking(booking);
+    setShowRescheduleModal(true);
+  };
+
+  const handleRescheduleSuccess = (updatedBooking: Booking) => {
+    setViewingPassBooking(updatedBooking);
+  };
 
   const handleCancel = (booking: Booking) => {
     Alert.alert(
@@ -112,7 +139,12 @@ export default function MyBookingsScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              activeOpacity={0.92}
+              onPress={() => handleOpenPass(item)}
+            >
+              {/* Card Header & Room Info */}
               <View style={styles.cardTopRow}>
                 <Image
                   source={{ uri: item.room.image_url }}
@@ -124,9 +156,10 @@ export default function MyBookingsScreen() {
                       <View style={styles.greenDot} />
                       <Text style={styles.confirmedText}>Confirmed</Text>
                     </View>
-                    <Text style={styles.passCodeTag}>
-                      #{item.id.slice(-5).toUpperCase()}
-                    </Text>
+                    <View style={styles.qrBadge}>
+                      <Ionicons name="qr-code" size={11} color="#2563EB" />
+                      <Text style={styles.qrBadgeText}>Pass #{item.id.slice(-5).toUpperCase()}</Text>
+                    </View>
                   </View>
 
                   <Text style={styles.roomName}>{item.room.name}</Text>
@@ -136,6 +169,7 @@ export default function MyBookingsScreen() {
                 </View>
               </View>
 
+              {/* Time Schedule Banner */}
               <View style={styles.scheduleBox}>
                 <View style={styles.scheduleItem}>
                   <Ionicons name="calendar" size={15} color="#2563EB" />
@@ -157,18 +191,55 @@ export default function MyBookingsScreen() {
                 </View>
               )}
 
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => handleCancel(item)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                <Text style={styles.cancelBtnText}>Cancel Reservation</Text>
-              </TouchableOpacity>
-            </View>
+              {/* Action Buttons Row */}
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                  style={styles.viewPassBtn}
+                  onPress={() => handleOpenPass(item)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="qr-code-outline" size={15} color="#2563EB" />
+                  <Text style={styles.viewPassText}>View QR Pass</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.rescheduleBtn}
+                  onPress={() => handleOpenReschedule(item)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="calendar-outline" size={15} color="#4F46E5" />
+                  <Text style={styles.rescheduleText}>Change Time</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => handleCancel(item)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
           )}
         />
       )}
+
+      {/* Booking Pass Modal */}
+      <BookingPassModal
+        visible={showPassModal}
+        booking={viewingPassBooking}
+        mode="view"
+        onClose={() => setShowPassModal(false)}
+        onEditTime={handleOpenReschedule}
+      />
+
+      {/* Reschedule Modal */}
+      <RescheduleModal
+        visible={showRescheduleModal}
+        booking={reschedulingBooking}
+        onClose={() => setShowRescheduleModal(false)}
+        onSuccess={handleRescheduleSuccess}
+      />
     </SafeAreaView>
   );
 }
@@ -322,11 +393,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  passCodeTag: {
-    fontSize: 11,
+  qrBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  qrBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#94A3B8',
-    letterSpacing: 0.5,
+    color: '#2563EB',
   },
   roomName: {
     fontSize: 16,
@@ -382,19 +463,54 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: '500',
   },
-  cancelBtn: {
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  viewPassBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
     paddingVertical: 9,
     borderRadius: 10,
-    marginTop: 12,
   },
-  cancelBtnText: {
-    color: '#EF4444',
+  viewPassText: {
+    color: '#2563EB',
     fontSize: 12,
     fontWeight: '700',
+  },
+  rescheduleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  rescheduleText: {
+    color: '#4F46E5',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
 });

@@ -17,7 +17,9 @@ interface BookingPassModalProps {
   visible: boolean;
   booking: Booking | null;
   onClose: () => void;
-  onViewMyBookings: () => void;
+  onViewMyBookings?: () => void;
+  onEditTime?: (booking: Booking) => void;
+  mode?: 'new' | 'view';
 }
 
 export const BookingPassModal: React.FC<BookingPassModalProps> = ({
@@ -25,10 +27,14 @@ export const BookingPassModal: React.FC<BookingPassModalProps> = ({
   booking,
   onClose,
   onViewMyBookings,
+  onEditTime,
+  mode = 'new',
 }) => {
   const userSession = useBookingStore((state) => state.userSession);
 
   if (!booking) return null;
+
+  const isViewMode = mode === 'view';
 
   return (
     <Modal
@@ -40,14 +46,27 @@ export const BookingPassModal: React.FC<BookingPassModalProps> = ({
       <View style={styles.overlay}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.passTicket}>
-            {/* Header with success check */}
+            {/* Header */}
             <View style={styles.ticketHeader}>
-              <View style={styles.successIconBubble}>
-                <Ionicons name="checkmark-circle" size={36} color="#10B981" />
+              <View
+                style={[
+                  styles.iconBubble,
+                  isViewMode ? styles.viewIconBubble : styles.successIconBubble,
+                ]}
+              >
+                <Ionicons
+                  name={isViewMode ? 'qr-code' : 'checkmark-circle'}
+                  size={32}
+                  color={isViewMode ? '#2563EB' : '#10B981'}
+                />
               </View>
-              <Text style={styles.modalTitle}>Booking Confirmed!</Text>
+              <Text style={styles.modalTitle}>
+                {isViewMode ? 'Study Room Pass' : 'Booking Confirmed!'}
+              </Text>
               <Text style={styles.modalSubtitle}>
-                Study Room Entry Pass
+                {isViewMode
+                  ? 'Present QR code at entrance check-in'
+                  : 'Study Room Entry Pass'}
               </Text>
             </View>
 
@@ -102,22 +121,47 @@ export const BookingPassModal: React.FC<BookingPassModalProps> = ({
 
             {/* Action Buttons */}
             <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.viewBookingsBtn}
-                onPress={onViewMyBookings}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="calendar-outline" size={16} color="#2563EB" />
-                <Text style={styles.viewBookingsText}>My Bookings</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.doneBtn}
-                onPress={onClose}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.doneText}>Done</Text>
-              </TouchableOpacity>
+              {isViewMode ? (
+                <>
+                  {onEditTime && (
+                    <TouchableOpacity
+                      style={styles.rescheduleBtn}
+                      onPress={() => onEditTime(booking)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color="#2563EB" />
+                      <Text style={styles.rescheduleBtnText}>Change Time</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.doneBtn}
+                    onPress={onClose}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.doneText}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {onViewMyBookings && (
+                    <TouchableOpacity
+                      style={styles.viewBookingsBtn}
+                      onPress={onViewMyBookings}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color="#2563EB" />
+                      <Text style={styles.viewBookingsText}>My Bookings</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.doneBtn}
+                    onPress={onClose}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.doneText}>Done</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </SafeAreaView>
@@ -159,8 +203,19 @@ const styles = StyleSheet.create({
   ticketHeader: {
     alignItems: 'center',
   },
+  iconBubble: {
+    marginBottom: 6,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   successIconBubble: {
-    marginBottom: 4,
+    backgroundColor: '#ECFDF5',
+  },
+  viewIconBubble: {
+    backgroundColor: '#EFF6FF',
   },
   modalTitle: {
     fontSize: 20,
@@ -235,6 +290,23 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
+  rescheduleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+  rescheduleBtnText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   viewBookingsBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -266,4 +338,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

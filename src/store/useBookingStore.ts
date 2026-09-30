@@ -17,10 +17,21 @@ export interface BookingStore {
     notificationId?: string
   ) => Booking;
   cancelBooking: (bookingId: string) => void;
+  updateBooking: (
+    bookingId: string,
+    newDate: string,
+    newTimeSlot: string,
+    newNotificationId?: string
+  ) => void;
   setFilters: (filters: Partial<ActiveFilters>) => void;
   resetFilters: () => void;
   setUserSession: (session: UserSession | null) => void;
-  isSlotBooked: (roomId: string, date: string, timeSlot: string) => boolean;
+  isSlotBooked: (
+    roomId: string,
+    date: string,
+    timeSlot: string,
+    excludeBookingId?: string
+  ) => boolean;
   clearAllBookings: () => void;
 }
 
@@ -64,6 +75,21 @@ export const useBookingStore = create<BookingStore>()(
         }));
       },
 
+      updateBooking: (bookingId, newDate, newTimeSlot, newNotificationId) => {
+        set((state) => ({
+          activeBookings: state.activeBookings.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  date: newDate,
+                  timeSlot: newTimeSlot,
+                  notificationId: newNotificationId ?? b.notificationId,
+                }
+              : b
+          ),
+        }));
+      },
+
       setFilters: (filters) => {
         set((state) => ({
           activeFilters: {
@@ -83,13 +109,14 @@ export const useBookingStore = create<BookingStore>()(
         set({ userSession: session });
       },
 
-      isSlotBooked: (roomId, date, timeSlot) => {
+      isSlotBooked: (roomId, date, timeSlot, excludeBookingId) => {
         const { activeBookings } = get();
         return activeBookings.some(
           (b) =>
             b.roomId === roomId &&
             b.date === date &&
-            b.timeSlot === timeSlot
+            b.timeSlot === timeSlot &&
+            (excludeBookingId ? b.id !== excludeBookingId : true)
         );
       },
 
