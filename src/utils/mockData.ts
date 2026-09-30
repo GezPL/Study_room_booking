@@ -18,10 +18,10 @@ export const EQUIPMENT_OPTIONS = [
 
 export const DEFAULT_USER_SESSION: UserSession = {
   id: 'usr-vku-001',
-  name: 'Tran Huu Long',
-  studentId: '21IT089',
-  email: 'longth.21it@vku.udn.vn',
-  faculty: 'Information Technology & Digital Economy',
+  name: 'Phạm Ngọc Long',
+  studentId: '23IT.B122',
+  email: 'longpn.23itb@vku.udn.vn',
+  faculty: 'Department of Computer Science',
 };
 
 export const MOCK_ROOMS: Room[] = [

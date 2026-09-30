@@ -126,12 +126,33 @@ export const useBookingStore = create<BookingStore>()(
     }),
     {
       name: 'vku-booking-storage',
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
       // Only persist userSession and activeBookings, keep activeFilters ephemeral or persistent
       partialize: (state) => ({
         userSession: state.userSession,
         activeBookings: state.activeBookings,
       }),
+      migrate: (persistedState: any, version: number) => {
+        if (!persistedState) return persistedState;
+        if (version < 2 || persistedState.userSession?.studentId === '21IT089') {
+          return {
+            ...persistedState,
+            userSession: DEFAULT_USER_SESSION,
+          };
+        }
+        return persistedState;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (
+          state &&
+          (state.userSession?.studentId === '21IT089' ||
+            state.userSession?.name === 'Tran Huu Long' ||
+            !state.userSession)
+        ) {
+          state.setUserSession(DEFAULT_USER_SESSION);
+        }
+      },
     }
   )
 );
