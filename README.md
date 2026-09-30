@@ -177,7 +177,7 @@ npx expo-doctor
 
 ## 👥 Nhóm Tác Giả & Bản Quyền
 
-- **Đơn vị**: Khoa Công nghệ Thông tin & Kinh tế số - Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU).
+- **Đơn vị**: Khoa Khoa học máy tính - Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU).
 - **Học phần**: Phát triển ứng dụng đa nền tảng (Cross-platform Application Development).
 - **Giấy phép**: [MIT License](LICENSE).
 
